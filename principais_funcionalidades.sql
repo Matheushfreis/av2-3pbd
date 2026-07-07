@@ -4,7 +4,6 @@ INSERT INTO inscricoes (
     candidatoID, 
     local_provaID, 
     cargo, 
-    nota, 
     isencao, 
     status_isencao
 ) 
@@ -13,7 +12,6 @@ VALUES (
     2,                       -- ID do Candidato
     1,                       -- ID do Local de Prova escolhido
     'Engenheiro de Dados',   -- Cargo pretendido
-    0.00,                    -- Nota inicial é zero
     0,                       -- 0 para Não Isento, 1 para Isento
     'indeferido'             -- Status inicial da isenção caso não tenha pedido
 );
@@ -40,41 +38,43 @@ INNER JOIN candidato c ON pres.candidatoID = c.candidatoID
 WHERE lp.concursoID = 1 
 ORDER BY lp.endereco, s.salaID, c.nome;
 
--- Calculando a nota final baseada nos acertos e no peso da prova
-UPDATE inscricoes i
-INNER JOIN candidato_prova cp ON i.candidatoID = cp.candidatoID
+-- Calculando a nota final baseada na nota e no peso da prova
+UPDATE nota_concurso nc
+INNER JOIN candidato_prova cp ON nc.candidatoID = cp.candidatoID
 INNER JOIN prova p ON cp.provaID = p.provaID
-SET i.nota = (cp.acertos * p.peso)
-WHERE i.concursoID = 1;
+SET nc.media = (p.nota * p.peso)
+WHERE nc.concursoID = 1;
 
 -- Ranking de candidatos para um determinado concurso e cargo
 SELECT 
     c.nome AS Candidato,
     i.cargo AS Cargo,
-    i.nota AS Nota_Final
+    nc.nota AS Nota_Final
 FROM inscricoes i
 INNER JOIN candidato c ON i.candidatoID = c.candidatoID
+INNER JOIN nota_candidato nc ON nc.candidatoID = c.candidatoID
 WHERE i.concursoID = 1 
   AND i.cargo = 'Analista de Sistemas'
-ORDER BY i.nota DESC;
+ORDER BY nc.nota DESC;
 
 -- Relatório estatístico por cargo dentro de um concurso
 SELECT 
     i.cargo AS Cargo,
     COUNT(i.inscricaoID) AS Total_Candidatos,
-    ROUND(AVG(i.nota), 2) AS Media_Geral,
-    MAX(i.nota) AS Nota_Mais_Alta,
+    ROUND(AVG(nc.nota), 2) AS Media_Geral,
+    MAX(nc.nota) AS Nota_Mais_Alta,
     
     -- Conta como 1 se a nota for maior ou igual a 60 (Aprovado)
-    SUM(CASE WHEN i.nota >= 60.00 THEN 1 ELSE 0 END) AS Qtd_Aprovados,
+    SUM(CASE WHEN nc.nota >= 60.00 THEN 1 ELSE 0 END) AS Qtd_Aprovados,
     
     -- Conta como 1 se a nota for menor que 60 (Reprovado)
-    SUM(CASE WHEN i.nota < 60.00 THEN 1 ELSE 0 END) AS Qtd_Reprovados,
+    SUM(CASE WHEN nc.nota < 60.00 THEN 1 ELSE 0 END) AS Qtd_Reprovados,
     
     -- Calcula a taxa de aprovação em porcentagem
-    ROUND((SUM(CASE WHEN i.nota >= 60.00 THEN 1 ELSE 0 END) / COUNT(i.inscricaoID)) * 100, 2) AS Percentual_Aprovacao
+    ROUND((SUM(CASE WHEN nc.nota >= 60.00 THEN 1 ELSE 0 END) / COUNT(i.inscricaoID)) * 100, 2) AS Percentual_Aprovacao
     
 FROM inscricoes i
+INNER JOIN  nota_candidato nc ON nc.concursoID = i.concursoID
 WHERE i.concursoID = 1
 GROUP BY i.cargo
 ORDER BY Qtd_Aprovados DESC;
