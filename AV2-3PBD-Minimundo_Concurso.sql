@@ -91,7 +91,6 @@ CREATE TABLE `inscricoes` (
   `candidatoID` int(11) NOT NULL,
   `local_provaID` int(11) NOT NULL,
   `cargo` varchar(40) NOT NULL,
-  `nota` decimal(10,0) NOT NULL,
   `isencao` tinyint(1) NOT NULL,
   `status_isencao` enum('pendente','deferido','indeferido') NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -143,6 +142,7 @@ CREATE TABLE `prova` (
   `provaID` int(11) NOT NULL,
   `concursoID` int(11) NOT NULL,
   `cargo` varchar(40) NOT NULL,
+  `nota` decimal(5,2) NOT NULL,
   `gabarito` varchar(40) NOT NULL,
   `peso` decimal(10,0) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -196,6 +196,21 @@ CREATE TABLE `sala` (
   `local_provaID` int(11) NOT NULL,
   `fiscal` varchar(40) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Estrutura para tabela `nota_concurso`
+--
+
+CREATE TABLE `nota_concurso` (
+  `notaConcursoID` int(11) NOT NULL,
+  `concursoID` int(11) NOT NULL,
+  `candidatoID` int(11) NOT NULL,
+  `media` decimal(5,2) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
 
 --
 -- Índices para tabelas despejadas
@@ -297,6 +312,14 @@ ALTER TABLE `sala`
   ADD KEY `local_provaID` (`local_provaID`);
 
 --
+-- Índices de tabela `nota_concurso`
+--
+ALTER TABLE `nota_concurso`
+  ADD PRIMARY KEY (`notaConcursoID`),
+  ADD KEY `concursoID` (`concursoID`),
+  ADD KEY `candidatoID` (`candidatoID`);
+
+--
 -- AUTO_INCREMENT para tabelas despejadas
 --
 
@@ -379,6 +402,12 @@ ALTER TABLE `sala`
   MODIFY `salaID` int(11) NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT de tabela `nota_concurso`
+--
+ALTER TABLE `nota_concurso`
+  MODIFY `notaConcursoID` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- Restrições para tabelas despejadas
 --
 
@@ -443,7 +472,16 @@ ALTER TABLE `recurso`
 ALTER TABLE `sala`
   ADD CONSTRAINT `sala_ibfk_1` FOREIGN KEY (`provaID`) REFERENCES `prova` (`provaID`),
   ADD CONSTRAINT `sala_ibfk_2` FOREIGN KEY (`local_provaID`) REFERENCES `local_prova` (`local_provaID`);
+
+--
+-- Restrições para tabelas `nota_concurso`
+--
+ALTER TABLE `nota_concurso`
+  ADD CONSTRAINT `nota_concurso_ibfk_1` FOREIGN KEY (`concursoID`) REFERENCES `concurso` (`concursoID`),
+  ADD CONSTRAINT `nota_concurso_ibfk_2` FOREIGN KEY (`candidatoID`) REFERENCES `candidato` (`candidatoID`);
 COMMIT;
+
+
 
 -- 1. Criar um Candidato
 INSERT INTO candidato (nome, endereco, email, login, hashSenha) 
@@ -458,11 +496,11 @@ INSERT INTO local_prova (concursoID, endereco)
 VALUES (1, 'Escola Estadual Central - Av. Principal, 1000');
 
 -- 4. Inscrever o Candidato no Concurso
-INSERT INTO inscricoes (concursoID, candidatoID, local_provaID, cargo, nota, isencao, status_isencao) 
-VALUES (1, 1, 1, 'Analista de Sistemas', 0.00, 1, 'pendente');
+INSERT INTO inscricoes (concursoID, candidatoID, local_provaID, cargo, isencao, status_isencao) 
+VALUES (1, 1, 1, 'Analista de Sistemas', 1, 'pendente');
 
 -- 5. Preparar ambiente para Recurso: Criar Questão, Prova e Relacionar
-INSERT INTO prova (concursoID, cargo, gabarito, peso) VALUES (1, 'Analista de Sistemas', 'A-B-C-D', 2.5);
+INSERT INTO prova (concursoID, cargo, nota, gabarito, peso) VALUES (1, 'Analista de Sistemas', 0.00, 'A-B-C-D', 2.5);
 INSERT INTO questao (questao, gabarito) VALUES ('O que é SQL?', 'D');
 INSERT INTO prova_questao (provaID, questaoID) VALUES (1, 1);
 
